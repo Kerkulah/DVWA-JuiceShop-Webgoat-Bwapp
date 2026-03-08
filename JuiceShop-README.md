@@ -4,7 +4,7 @@
 
 
 
-A hands on walkthrough of SQL injection attacks against DVWA (Damn Vulnerable Web Application) at Medium security level, completed as part of my blue team/security analyst lab.
+For this lab We're going to find a real input field on Juice Shop that reflects our input unsanitized, inject JavaScript that runs in the browser, and pop an alert showing a stolen session cookie, exactly what real attackers do to hijack accounts. 
 <br />
 <h2> What's covered:</h2>
 

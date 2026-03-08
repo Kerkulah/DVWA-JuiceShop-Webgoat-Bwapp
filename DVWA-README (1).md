@@ -1,7 +1,3 @@
-<h1> DVWA / JuiceShop / Webgoat / Bwapp
-</h1>
-
-
 
 <h2>DVWA SQL Injection – Automated Exploitation</h2>
 A hands on walkthrough of SQL injection attacks against DVWA (Damn Vulnerable Web Application) at Medium security level, completed as part of my blue team/security analyst lab.

